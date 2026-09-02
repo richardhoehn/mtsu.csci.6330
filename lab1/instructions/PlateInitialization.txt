@@ -1,0 +1,39 @@
+
+Regarding Initialization
+
+Consider a 5x5 grid with init temps:
+    100 on the top row
+    200 on the left col
+    300 on the right col
+    400 on the bottom
+
+The assignment says to initialize the edges in this manner:
+
+    To make sure that the corners are initialized in the same manner, we will
+    initialize the rows and columns in this order:
+        entire top row (0)
+        entire left column (0)
+        entire right column (N-1)
+        entire bottom row (M-1)
+
+If we did just that much, we would have edges like this:
+
+200 100 100 100 300
+200             300
+200             300
+200             300
+400 400 400 400 400
+
+The top row originally would have had all 100's.
+But the top-left value would become 200 when we then initialized the ENTIRE left col.
+The top-right value would have become 300 when we initialize the ENTIRE right col.
+The entire bottom row would be come all 400's when we initialize the ENTIRE bottom row.
+
+There are 16 values around those edges which, when summed, total 4300.
+
+4300/16 = 268.75  which would become the initial value for all the interior points,
+based on this comment in the project description:
+
+    A common way to initialize the interior points of the grid is to set them
+    all to the average of all the values along the edges.
+

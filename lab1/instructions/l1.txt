@@ -1,0 +1,64 @@
+                         Parallel Processing Concept
+                                 CSCI 4330/6330
+                                 Fall 2022
+                                 Lab1:Hotplate_problem
+
+
+
+
+The file named hotplate_problem.txt describes the hotplate problem.
+Write a sequential C program to solve the problem, meeting the criteria
+described below.  The algorithms in this program will form the basis
+for parallel programs later.
+
+To make sure that the corners are initialized in the same manner, we will
+initialize the rows and columns in this order:
+    entire top row (0)
+    entire left column (0)
+    entire right column (N-1)
+    entire bottom row (M-1)
+
+See Plateinitialization.txt for more information on grid initialization.
+
+
+To run the program I will type commands like this one:
+
+    ./l1 500 600 100 100 100 400 0.01
+
+where the args are:
+
+    l1 num_rows num_cols top_temp left_temp right_temp bottom_temp epsilon
+
+Print current status (not the entire grid) *at the end* of each iteration
+that is a power of 2.  Also print the status on the last iteration even if
+it is not a power of 2.  This status should simply be the maximum difference
+of any single point of the grid between two successive iterations.  You will
+need to check the difference for every point to obtain the maximum one.
+
+For example, if we were to run this:
+
+    ./l1 500 500 0 100 100 100 0.1
+
+you would print these values:
+
+      1    9.381264
+      2    5.863289
+      4    3.517975
+      8    2.024666
+     16    1.073090
+     32    0.551464
+     64    0.279060
+    128    0.140865
+    181    0.099609
+
+
+Please submit a tar file containing all of your project files in D2L,
+including a makefile that will build the executable program which MUST
+be named l1.
+
+To build the project, I will cd to my directory containing your files
+and simply type:
+
+    rm -rf l1
+    rm -f *.o
+    make
