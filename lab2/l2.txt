@@ -1,0 +1,52 @@
+			              Parallel Processing Concept
+                                 CSCI 4330/6330
+                                
+                                 Lab2:Hotplate_problem using Pthreads
+
+
+
+
+
+
+Write a C program using pthreads to solve the hotplate problem.  The new
+program should conform to the same interface as Lab1 but will have one
+extra command-line argument, i.e. the number of threads to use.
+
+To run the program I will type commands like this one:
+
+    ./l2 500 600 100 100 100 400 0.01 8
+
+where the new value 8 represents the number of threads to work on the problem,
+INCLUDING the original thread.
+
+The expectation is that the program will get near-linear speed-ups as the 
+number of threads increases.  At the end, use gettimeofday to print the time
+spent in the iteration loops *including* all synchronization operations; but do
+not count the time for initialization.
+The one-line message should say this:
+
+    TOTAL TIME 2.429499  ## if 2.429499 is the time for all iterations for 8 threads
+
+The original thread should be the one that produces the printed output.
+
+All threads should participate in the work.
+
+
+Please submit a zipfile/tarfile containing all of your project files,
+including a makefile that will build the executable program which MUST
+be named l2.  Note that I only type the simple command "make" below in
+order to have the program built.
+
+    rm -rf l2
+    rm -f *.o
+    make
+
+or I will run 
+make clean
+make
+make run
+
+Also, Plot the curve showing running time for threads 1,2,4,8,16,32 with proper x and Y label using any programming language(GNU plot/Python/matlab).
+Please include code and screenshot.
+(You can use Python/Matlab or other tools just for the plot) inside that zip or  tar file.
+
