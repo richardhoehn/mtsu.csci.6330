@@ -1,0 +1,31 @@
+#!/bin/sh                                                                                                                                                  
+
+export EVALFUNC_MAXNODEIDS=140
+
+export EVALFUNC_FAKEWORKTIME=0.1
+
+export EVALFUNC_ANSWERIDS=11,44,111,133
+
+echo
+echo RMB "--------  0.1 work time --------"
+echo
+echo RMB "-------------------------------- 1 thrds  ~14 secs"
+echo RMB " 4 solutions  11,44,111,133"
+echo
+
+/usr/bin/time -p  ./l3 1 9999
+
+echo
+echo RMB "-------------------------------- 2 thrds"
+echo
+
+/usr/bin/time -p  ./l3 2 9999
+
+echo
+echo RMB "-------------------------------- 4 thrds"
+echo
+
+/usr/bin/time -p  ./l3 4 9999
+
+echo
+pwd
