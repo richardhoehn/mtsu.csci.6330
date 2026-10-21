@@ -1,0 +1,61 @@
+				Parallel Processing Concept
+                                 CSCI 4330/6330
+                                 Fall 2022
+                                 Lab3:Search Problem: OpenMP
+
+
+
+
+Write a C/C++ program that uses  openmp to implement the
+search operations described below.
+
+The program should examine a search space looking for one or more 
+solutions.  The file named evalfunc.o contains a function named evalfunc
+which can be invoked to evaluate each node of the space.  Each node in
+the space is identified by a unique integer id.  The first node in the 
+space will always be node 0.
+
+evalfunc has this prototype:
+
+    double evalfunc(int nodeid, int *expandid1, int *expandid2)
+
+The first argument is the integer id of the node you wish to have
+evaluated.  The second and third args will be filled in with the ids of
+new nodes that can be expanded from the current one.  The values of the
+expansion nodes are only valid if they are greater than 0.  Otherwise, 
+the current node did not expand.  
+
+The double return code lets you know if the current node is a solution
+in the search space.  If it is greater than 1.0 then it is a solution.
+Otherwise, the return code is a heuristic value of the node as a potential
+path to a solution.
+
+Your program should take two cmd-line args:
+
+    ./l4 T N   ## T threads ; stop after finding N solutions
+               ## note: N may be very large, searching entire space
+
+T is the number of threads that you create.  You can have the original
+thread simply wait for their termination.
+
+We will discuss some environment variables in class which evalfunc uses
+and by which you may affect the contents of the search space for testing.
+
+Print each nodeid that is a solution, and the value of the solution.
+At the end, print a termination message telling the total number of nodes
+examined (this message should only be printed once, by the main thread).
+
+
+Please submit a zipfile/tarfile containing all of your project files,
+including a makefile that will build the executable program which MUST
+be named l3.  Note that I only type the simple command "make" below in
+order to have the program built.
+
+    rm -rf l3
+    rm -f *.o
+    make
+
+or I will run 
+make clean
+make
+make run
