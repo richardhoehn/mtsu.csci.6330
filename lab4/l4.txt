@@ -1,0 +1,38 @@
+				           Parallel Processing Concept
+                                 CSCI 4330/6330
+                                 Lab4:Hotplate_problem using MPI
+
+
+
+
+
+Write an MPI C program to solve the hotplate problem.  Because MPI
+programs are executed via mpiexec, there will necessarily be a small
+change to the method by which programs are run.
+
+BE SURE THAT EVERY RANK DOES THIS:
+    
+    alarm(180)
+
+where 180 is a sufficient number of seconds for the rank to do its work.
+
+To run the program I will type commands like this one:
+
+    mpiexec -n 16  ./l4 500 600 100 100 100 400 0.01
+
+where the 16 represents the number of ranks to use.
+
+Rank 0 should act as a manager process here.  It will coordinate the
+activities of the other ranks.  For that reason, you may assume that the
+number of ranks specified will never be less than 2.  Rank 0 should also
+produce all printed output.
+
+
+Submit a zip file containing all of your project files,
+including a makefile that will build the executable program which MUST
+be named l4.  Note that I only type the simple command "make" below in
+order to have the program built.
+
+    rm -rf l4
+    rm -f *.o
+    make
