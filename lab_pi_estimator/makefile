@@ -20,4 +20,4 @@ run: $(TARGET)
 
 # Clean
 clean:
-	rm -f $(TARGET) results_*.csv pi_*.csv
+	rm -f $(TARGET)
