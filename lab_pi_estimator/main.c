@@ -1,7 +1,7 @@
 
 /*
 
-Name:  Richard & Rajan
+Name:  Richard & Raazan
 Class: CSCI-6630
 Lab:   Pi - Estimator
 Date:  2026-10-21
