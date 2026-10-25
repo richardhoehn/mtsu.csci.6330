@@ -1,11 +1,23 @@
+
 CC = cc
-CFLAGS = -pthread
+CFLAGS = -O2 -Wall -Wextra -pthread
 
-main: main.c
-	$(CC) $(CFLAGS) -o main main.c
+TARGET = main
+THREADS ?= 4
+TESTS ?= 100000
 
-run:
-	./main 3 10000
+.PHONY: all run clean
 
+# Compile
+all: $(TARGET)
+
+$(TARGET): main.c
+	$(CC) $(CFLAGS) -o $(TARGET) main.c
+
+# Run
+run: $(TARGET)
+	./$(TARGET) $(THREADS) $(TESTS)
+
+# Clean
 clean:
-	rm -f main
+	rm -f $(TARGET) results_*.csv pi_*.csv

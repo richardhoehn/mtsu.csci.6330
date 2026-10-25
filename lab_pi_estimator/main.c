@@ -14,6 +14,17 @@ Desc:  Parallel Search
 #include <pthread.h>
 #include <time.h>
 
+// Shared progress across threads
+typedef struct {
+    pthread_mutex_t mutex;
+    long completed;
+    long inside;
+    long nextLog;
+    long logEvery;
+    long lastLogged;
+    FILE *file;
+} Progress;
+
 // Thread arguments
 typedef struct {
     long start;
@@ -23,6 +34,7 @@ typedef struct {
     int *results;
     double *x;
     double *y;
+    Progress *progress;
 } ThreadData;
 
 // Check if point is inside circle of radius 1
@@ -30,11 +42,38 @@ int insideCircle(double x, double y) {
     return (x * x + y * y <= 1.0);
 }
 
+// Update shared progress
+void updateProgress(Progress *p, long count, long inside) {
+    pthread_mutex_lock(&p->mutex);
+
+    p->completed += count;
+    p->inside += inside;
+
+    if (p->completed >= p->nextLog) {
+        double pi = 4.0 * p->inside / p->completed;
+
+        fprintf(p->file, "%ld,%.8f\n", p->completed, pi);
+        fflush(p->file);
+
+        p->lastLogged = p->completed;
+        p->nextLog = p->completed + p->logEvery;
+    }
+
+    pthread_mutex_unlock(&p->mutex);
+}
+
 // Thread worker
 void *runTests(void *arg) {
     ThreadData *data = (ThreadData *)arg;
 
     data->inside = 0;
+
+    long batchCount = 0;
+    long batchInside = 0;
+
+    long batchSize = data->progress->logEvery / 4;
+    if (batchSize < 1) batchSize = 1;
+    if (batchSize > 10000) batchSize = 10000;
 
     for (long i = data->start; i < data->start + data->count; i++) {
 
@@ -48,6 +87,21 @@ void *runTests(void *arg) {
         data->results[i] = inside;
 
         data->inside += inside;
+        batchInside += inside;
+        batchCount++;
+
+        // Periodically update global progress
+        if (batchCount >= batchSize) {
+            updateProgress(data->progress, batchCount, batchInside);
+
+            batchCount = 0;
+            batchInside = 0;
+        }
+    }
+
+    // Include remaining tests
+    if (batchCount > 0) {
+        updateProgress(data->progress, batchCount, batchInside);
     }
 
     return NULL;
@@ -55,8 +109,8 @@ void *runTests(void *arg) {
 
 int main(int argc, char *argv[]) {
 
-    if (argc != 3) {
-        printf("Usage: %s <threads> <tests>\n", argv[0]);
+    if (argc < 3 || argc > 4) {
+        printf("Usage: %s <threads> <tests> [logEvery]\n", argv[0]);
         return 1;
     }
 
@@ -66,6 +120,19 @@ int main(int argc, char *argv[]) {
     if (numThreads <= 0 || numTests <= 0) {
         printf("Threads and tests must be positive.\n");
         return 1;
+    }
+
+    // Default: approximately 1000 progress samples
+    long logEvery = numTests / 1000;
+    if (logEvery < 1) logEvery = 1;
+
+    if (argc == 4) {
+        logEvery = atol(argv[3]);
+
+        if (logEvery <= 0) {
+            printf("Log interval must be positive.\n");
+            return 1;
+        }
     }
 
     pthread_t threads[numThreads];
@@ -83,56 +150,110 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    long testsPerThread = numTests / numThreads;
-    long remainder = numTests % numThreads;
-    long start = 0;
+    // Open Pi progress file
+    char piFilename[100];
+    snprintf(piFilename, sizeof(piFilename), "pi_%ld.csv", numTests);
 
-    // Start threads
-    for (int i = 0; i < numThreads; i++) {
+    FILE *piFile = fopen(piFilename, "w");
 
-        data[i].start = start;
-        data[i].count = testsPerThread + (i < remainder ? 1 : 0);
-        data[i].seed = (unsigned int)time(NULL) ^ (unsigned int)(i * 1234567U + 1U);
-        data[i].x = x;
-        data[i].y = y;
-        data[i].results = results;
-
-        pthread_create(&threads[i], NULL, runTests, &data[i]);
-
-        start += data[i].count;
-    }
-
-    // Wait for threads
-    long totalInside = 0;
-
-    for (int i = 0; i < numThreads; i++) {
-        pthread_join(threads[i], NULL);
-        totalInside += data[i].inside;
-    }
-
-    // Estimate Pi
-    double pi = 4.0 * totalInside / numTests;
-
-    // Write CSV
-    char filename[100];
-    snprintf(filename, sizeof(filename), "results_%ld.csv", numTests);
-
-    FILE *file = fopen(filename, "w");
-
-    if (!file) {
-        perror("Failed to open CSV");
+    if (!piFile) {
+        perror("Failed to open Pi CSV");
         free(x);
         free(y);
         free(results);
         return 1;
     }
 
-    fprintf(file, "x,y,inside\n");
+    fprintf(piFile, "count,pi\n");
+
+    Progress progress = {
+        .mutex = PTHREAD_MUTEX_INITIALIZER,
+        .completed = 0,
+        .inside = 0,
+        .nextLog = logEvery,
+        .logEvery = logEvery,
+        .lastLogged = 0,
+        .file = piFile
+    };
+
+    long testsPerThread = numTests / numThreads;
+    long remainder = numTests % numThreads;
+    long start = 0;
+
+    // Start threads
+    int started = 0;
+
+    for (int i = 0; i < numThreads; i++) {
+
+        data[i].start = start;
+        data[i].count = testsPerThread + (i < remainder ? 1 : 0);
+        data[i].seed = (unsigned int)time(NULL) ^
+                       (unsigned int)(i * 1234567U + 1U);
+        data[i].x = x;
+        data[i].y = y;
+        data[i].results = results;
+        data[i].progress = &progress;
+        data[i].inside = 0;
+
+        if (pthread_create(&threads[i], NULL, runTests, &data[i]) != 0) {
+            fprintf(stderr, "Failed to create thread %d\n", i);
+            break;
+        }
+
+        started++;
+        start += data[i].count;
+    }
+
+    // Wait for threads
+    for (int i = 0; i < started; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    if (started != numThreads) {
+        fclose(piFile);
+        pthread_mutex_destroy(&progress.mutex);
+        free(x);
+        free(y);
+        free(results);
+        return 1;
+    }
+
+    long totalInside = progress.inside;
+
+    // Final Pi estimate
+    double pi = 4.0 * totalInside / numTests;
+
+    // Ensure final count is logged
+    if (progress.lastLogged != numTests) {
+        fprintf(piFile, "%ld,%.8f\n", numTests, pi);
+    }
+
+    fclose(piFile);
+    pthread_mutex_destroy(&progress.mutex);
+
+    // Write outside-circle points only
+    char filename[100];
+    snprintf(filename, sizeof(filename), "results_%ld.csv", numTests);
+
+    FILE *file = fopen(filename, "w");
+
+    if (!file) {
+        perror("Failed to open results CSV");
+        free(x);
+        free(y);
+        free(results);
+        return 1;
+    }
+
+    fprintf(file, "count,x,y\n");
+
+    long outsideCount = 0;
 
     for (long i = 0; i < numTests; i++) {
-        fprintf(file, "%.6f,%.6f,%s\n",
-                x[i], y[i],
-                results[i] ? "true" : "false");
+        if (!results[i]) {
+            fprintf(file, "%ld,%.6f,%.6f\n", i + 1, x[i], y[i]);
+            outsideCount++;
+        }
     }
 
     fclose(file);
@@ -140,8 +261,11 @@ int main(int argc, char *argv[]) {
     printf("Threads: %d\n", numThreads);
     printf("Tests:   %ld\n", numTests);
     printf("Inside:  %ld\n", totalInside);
+    printf("Outside: %ld\n", outsideCount);
     printf("Pi:      %.8f\n", pi);
-    printf("File:    %s\n", filename);
+    printf("Error:   %.8f\n", pi - 3.141592653589793);
+    printf("Points:  %s\n", filename);
+    printf("Pi Log:  %s\n", piFilename);
 
     free(x);
     free(y);
