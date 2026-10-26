@@ -1,0 +1,15 @@
+CC = mpicc
+CFLAGS = -O2 -Wall
+LDLIBS = -lm
+
+.PHONY: all run clean
+all: l4
+
+l4: l4.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
+
+run: l4
+	mpirun -np 4 ./l4 500 600 100 100 100 400 0.01
+
+clean:
+	rm -f l4 *.o
